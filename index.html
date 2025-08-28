@@ -43,6 +43,10 @@
                     <i data-lucide="credit-card" class="w-5 h-5"></i>
                     <span class="hidden md:inline">Contas</span>
                 </button>
+                <button data-tab="subscriptions" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition text-gray-600 hover:bg-blue-100">
+                    <i data-lucide="gem" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Assinaturas</span>
+                </button>
                 <button data-tab="investments" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition text-gray-600 hover:bg-blue-100">
                     <i data-lucide="trending-up" class="w-5 h-5"></i>
                     <span class="hidden md:inline">Investimentos</span>
@@ -140,6 +144,30 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Seção Assinaturas -->
+        <div id="subscriptions-content" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Gerenciar Assinaturas</h2>
+                    <button id="add-subscription-button" class="bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-purple-700 transition">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                        <span>Nova Assinatura</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas a Pagar (<span id="pending-subs-count">0</span>)</h3>
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="subscriptions-pending-list"></div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas Pagas no Mês (<span id="paid-subs-count">0</span>)</h3>
+                        <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="subscriptions-paid-list"></div>
+                    </div>
+                </div>
+                <div class="pt-4 mt-4 border-t" id="subscriptions-summary"></div>
+            </div>
+        </div>
 
         <!-- Seção Investimentos -->
         <div id="investments-content" class="tab-content hidden space-y-6">
@@ -233,6 +261,21 @@
         </div>
     </div>
 
+    <div id="subscription-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="subscription-form" class="space-y-4">
+                <h2 id="subscription-modal-title" class="text-xl font-bold text-gray-800">Nova Assinatura</h2>
+                <input type="hidden" id="subscription-id">
+                <div><label class="block text-sm font-medium text-gray-700">Descrição</label><input type="text" id="subscription-description" placeholder="Ex: Netflix" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" step="0.01" id="subscription-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Dia do Vencimento</label><input type="number" id="subscription-dueDay" min="1" max="31" placeholder="Ex: 10" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Categoria</label><select id="subscription-tag" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Lazer</option><option>Ferramenta</option><option>Educação</option><option>Outros</option></select></div>
+                <button type="submit" class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition">Salvar Assinatura</button>
+            </form>
+        </div>
+    </div>
+
     <div id="investment-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
         <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
             <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
@@ -295,6 +338,10 @@
                     { id: 1, description: 'Assinatura Spotify', amount: 21.90, dueDay: 10 },
                     { id: 2, description: 'Plano de Celular', amount: 80.00, dueDay: 15 },
                     { id: 3, description: 'Aluguel', amount: 1200.00, dueDay: 5 },
+                ],
+                subscriptions: [
+                    { id: 1, description: 'Netflix', amount: 39.90, dueDay: 20, tag: 'Lazer', paidMonths: [] },
+                    { id: 2, description: 'Youtube Premium', amount: 20.90, dueDay: 12, tag: 'Lazer', paidMonths: [] }
                 ]
             };
             
@@ -314,7 +361,8 @@
                     transactions: loadedState.transactions || initialData.transactions,
                     goals: loadedState.goals || initialData.goals,
                     investments: loadedState.investments || initialData.investments,
-                    bills: loadedState.bills || initialData.bills
+                    bills: loadedState.bills || initialData.bills,
+                    subscriptions: loadedState.subscriptions || initialData.subscriptions
                 };
 
                 // FIX: Ensure nested portfolio array exists for backward compatibility
@@ -345,6 +393,7 @@
 
                 if (state.activeTab === 'dashboard') renderDashboard();
                 if (state.activeTab === 'bills') renderBills();
+                if (state.activeTab === 'subscriptions') renderSubscriptions();
                 if (state.activeTab === 'investments') renderInvestments();
                 if (state.activeTab === 'goals') renderGoals();
                 
@@ -355,6 +404,7 @@
                 const now = new Date();
                 const currentMonth = now.getMonth();
                 const currentYear = now.getFullYear();
+                const currentMonthKey = `${currentYear}-${currentMonth}`;
                 
                 const currentMonthTransactions = state.transactions.filter(t => {
                     const tDate = new Date(t.date + 'T00:00:00Z'); // Use UTC to avoid timezone issues
@@ -364,8 +414,8 @@
                 const entrada = currentMonthTransactions.filter(t => t.type === 'entrada').reduce((acc, t) => acc + t.amount, 0);
                 const saida = currentMonthTransactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0);
                 
-                const presumedExpensesTotal = state.bills.reduce((acc, bill) => acc + bill.amount, 0);
-                const finalBalance = entrada - saida - presumedExpensesTotal;
+                const pendingSubscriptionsTotal = state.subscriptions.filter(s => !s.paidMonths.includes(currentMonthKey)).reduce((acc, s) => acc + s.amount, 0);
+                const presumedExpensesTotal = state.bills.reduce((acc, bill) => acc + bill.amount, 0) + pendingSubscriptionsTotal;
 
                 document.getElementById('dashboard-cards').innerHTML = `
                     <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-emerald-100 text-emerald-600"><i data-lucide="arrow-up-circle"></i></div><div><p class="text-sm text-gray-500">Entradas do Mês</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(entrada)}</p></div></div>
@@ -437,6 +487,60 @@
                         </div>
                     </div>
                 `).join('');
+            };
+
+            const renderSubscriptions = () => {
+                const now = new Date();
+                const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+
+                const pendingList = document.getElementById('subscriptions-pending-list');
+                const paidList = document.getElementById('subscriptions-paid-list');
+
+                const pendingSubs = state.subscriptions.filter(s => !s.paidMonths.includes(currentMonthKey));
+                const paidSubs = state.subscriptions.filter(s => s.paidMonths.includes(currentMonthKey));
+
+                document.getElementById('pending-subs-count').textContent = pendingSubs.length;
+                document.getElementById('paid-subs-count').textContent = paidSubs.length;
+
+                pendingList.innerHTML = pendingSubs.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-gray-800">${sub.description}</p>
+                                <p class="text-sm text-gray-500">Vence dia ${sub.dueDay} - ${sub.tag}</p>
+                            </div>
+                            <span class="text-xl font-bold text-purple-700">${formatCurrency(sub.amount)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-3">
+                            <button class="pay-subscription-button w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition text-sm" data-id="${sub.id}">Marcar como Pago</button>
+                            <button class="edit-subscription-button text-gray-400 hover:text-blue-500 p-2" data-id="${sub.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                            <button class="delete-subscription-button text-gray-400 hover:text-red-500 p-2" data-id="${sub.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                paidList.innerHTML = paidSubs.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
+                    <div class="bg-gray-50 p-4 rounded-xl opacity-60">
+                         <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-bold text-gray-800">${sub.description}</p>
+                                <p class="text-sm text-gray-500">Vence dia ${sub.dueDay} - ${sub.tag}</p>
+                            </div>
+                            <span class="text-xl font-bold text-purple-700">${formatCurrency(sub.amount)}</span>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-3">
+                            <button class="unpay-subscription-button w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm" data-id="${sub.id}">Mover para Pendente</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                const totalPending = pendingSubs.reduce((acc, s) => acc + s.amount, 0);
+                document.getElementById('subscriptions-summary').innerHTML = `
+                    <div class="flex justify-end text-xl mt-2">
+                        <span class="font-bold text-gray-800">Total a Pagar no Mês:</span>
+                        <span class="font-bold text-purple-700 ml-4">${formatCurrency(totalPending)}</span>
+                    </div>
+                `;
             };
 
             const renderInvestments = () => {
@@ -562,6 +666,41 @@
                         openModal('bill-modal');
                     }
                 }
+                if (target.classList.contains('delete-subscription-button')) { state.subscriptions = state.subscriptions.filter(s => s.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
+                if (target.classList.contains('edit-subscription-button')) {
+                    const sub = state.subscriptions.find(s => s.id === parseInt(target.dataset.id));
+                    if (sub) {
+                        document.getElementById('subscription-modal-title').textContent = "Editar Assinatura";
+                        document.getElementById('subscription-id').value = sub.id;
+                        document.getElementById('subscription-description').value = sub.description;
+                        document.getElementById('subscription-amount').value = sub.amount;
+                        document.getElementById('subscription-dueDay').value = sub.dueDay;
+                        document.getElementById('subscription-tag').value = sub.tag;
+                        openModal('subscription-modal');
+                    }
+                }
+                 if (target.classList.contains('pay-subscription-button')) {
+                    const subId = parseInt(target.dataset.id);
+                    const now = new Date();
+                    const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+                    const sub = state.subscriptions.find(s => s.id === subId);
+                    if (sub && !sub.paidMonths.includes(currentMonthKey)) {
+                        sub.paidMonths.push(currentMonthKey);
+                        saveData();
+                        renderAll();
+                    }
+                }
+                if (target.classList.contains('unpay-subscription-button')) {
+                    const subId = parseInt(target.dataset.id);
+                    const now = new Date();
+                    const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+                    const sub = state.subscriptions.find(s => s.id === subId);
+                    if (sub) {
+                        sub.paidMonths = sub.paidMonths.filter(m => m !== currentMonthKey);
+                        saveData();
+                        renderAll();
+                    }
+                }
                 if (target.classList.contains('delete-investment-button')) { state.investments.portfolio = state.investments.portfolio.filter(i => i.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
                 if (target.classList.contains('edit-investment-button')) {
                     const investment = state.investments.portfolio.find(i => i.id === parseInt(target.dataset.id));
@@ -592,11 +731,13 @@
             document.getElementById('add-income-button').addEventListener('click', () => { document.getElementById('transaction-form').reset(); document.getElementById('transaction-id').value = ''; document.getElementById('transaction-modal-title').textContent = "Nova Entrada"; document.getElementById('transaction-date').value = getTodayDate(); document.getElementById('type-entrada').click(); openModal('transaction-modal'); });
             document.getElementById('add-expense-button').addEventListener('click', () => { document.getElementById('transaction-form').reset(); document.getElementById('transaction-id').value = ''; document.getElementById('transaction-modal-title').textContent = "Nova Saída"; document.getElementById('transaction-date').value = getTodayDate(); document.getElementById('type-saida').click(); openModal('transaction-modal'); });
             document.getElementById('add-bill-button').addEventListener('click', () => { document.getElementById('bill-form').reset(); document.getElementById('bill-id').value = ''; document.getElementById('bill-modal-title').textContent = "Nova Conta Mensal"; openModal('bill-modal'); });
+            document.getElementById('add-subscription-button').addEventListener('click', () => { document.getElementById('subscription-form').reset(); document.getElementById('subscription-id').value = ''; document.getElementById('subscription-modal-title').textContent = "Nova Assinatura"; openModal('subscription-modal'); });
             document.getElementById('add-investment-button').addEventListener('click', () => { document.getElementById('investment-form').reset(); document.getElementById('investment-id').value = ''; document.getElementById('investment-modal-title').textContent = "Novo Investimento"; openModal('investment-modal'); });
             document.getElementById('add-goal-button').addEventListener('click', () => { document.getElementById('goal-form').reset(); document.getElementById('goal-id').value = ''; document.getElementById('goal-modal-title').textContent = "Novo Plano"; openModal('goal-modal'); });
 
-            document.getElementById('transaction-form').addEventListener('submit', (e) => { e.preventDefault(); const transactionId = document.getElementById('transaction-id').value; const type = document.getElementById('transaction-type').value; const transactionData = { amount: parseFloat(document.getElementById('transaction-amount').value), description: document.getElementById('transaction-description').value, date: document.getElementById('transaction-date').value, type: type, categoryTag: type === 'saida' ? document.getElementById('transaction-category').value : 'Salário', paymentTag: type === 'saida' ? document.getElementById('transaction-payment').value : 'Transferência', user: 'Eu' }; if (transactionId) { const index = state.transactions.findIndex(t => t.id === parseInt(transactionId)); if (index !== -1) { state.transactions[index] = { ...state.transactions[index], ...transactionData }; } } else { state.transactions.unshift({ id: Date.now(), ...transactionData }); } saveData(); closeModal(); renderAll(); });
+            document.getElementById('transaction-form').addEventListener('submit', (e) => { e.preventDefault(); const transactionId = document.getElementById('transaction-id').value; const type = document.getElementById('transaction-type').value; const transactionData = { amount: parseFloat(document.getElementById('transaction-amount').value), description: document.getElementById('transaction-description').value, date: document.getElementById('transaction-date').value, type: type, categoryTag: type === 'saida' ? document.getElementById('transaction-category').value : 'Salário', paymentTag: type === 'saida' ? document.getElementById('transaction-payment').value : 'Transferência', user: 'Eu' }; if (transactionId) { const index = state.transactions.findIndex(t => t.id === parseInt(transactionId)); if (index !== -1) { state.transactions[index] = { ...state.transactions[index], ...transactionData }; } } else { state.transactions.unshift({ id: Date.now(), ...transactionData }); } saveData(); renderAll(); document.getElementById('transaction-form').reset(); document.getElementById('transaction-date').value = getTodayDate(); });
             document.getElementById('bill-form').addEventListener('submit', (e) => { e.preventDefault(); const billId = document.getElementById('bill-id').value; const billData = { description: document.getElementById('bill-description').value, amount: parseFloat(document.getElementById('bill-amount').value), dueDay: parseInt(document.getElementById('bill-dueDay').value) }; if (billId) { const index = state.bills.findIndex(b => b.id === parseInt(billId)); if (index !== -1) { state.bills[index] = { ...state.bills[index], ...billData }; } } else { state.bills.push({ id: Date.now(), ...billData }); } saveData(); closeModal(); renderAll(); });
+            document.getElementById('subscription-form').addEventListener('submit', (e) => { e.preventDefault(); const subId = document.getElementById('subscription-id').value; const subData = { description: document.getElementById('subscription-description').value, amount: parseFloat(document.getElementById('subscription-amount').value), dueDay: parseInt(document.getElementById('subscription-dueDay').value), tag: document.getElementById('subscription-tag').value }; if (subId) { const index = state.subscriptions.findIndex(s => s.id === parseInt(subId)); if (index !== -1) { state.subscriptions[index] = { ...state.subscriptions[index], ...subData }; } } else { state.subscriptions.push({ id: Date.now(), ...subData, paidMonths: [] }); } saveData(); closeModal(); renderAll(); });
             document.getElementById('investment-form').addEventListener('submit', (e) => { e.preventDefault(); const invId = document.getElementById('investment-id').value; const invData = { bank: document.getElementById('investment-bank').value, type: document.getElementById('investment-type').value, amount: parseFloat(document.getElementById('investment-amount').value) }; if (invId) { const index = state.investments.portfolio.findIndex(i => i.id === parseInt(invId)); if (index !== -1) { state.investments.portfolio[index] = { ...state.investments.portfolio[index], ...invData }; } } else { state.investments.portfolio.push({ id: Date.now(), ...invData }); } saveData(); closeModal(); renderAll(); });
             document.getElementById('goal-form').addEventListener('submit', (e) => { e.preventDefault(); const goalId = document.getElementById('goal-id').value; const goalData = { name: document.getElementById('goal-name').value, targetAmount: parseFloat(document.getElementById('goal-target').value), monthlyInvestment: parseFloat(document.getElementById('goal-monthly-investment').value) }; if (goalId) { const index = state.goals.findIndex(g => g.id === parseInt(goalId)); if (index !== -1) { state.goals[index] = { ...state.goals[index], ...goalData }; } } else { state.goals.push({ id: Date.now(), ...goalData, deposits: [] }); } saveData(); closeModal(); renderAll(); });
             
