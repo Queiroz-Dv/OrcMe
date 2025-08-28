@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano Orçamentário</title>
+    
+    <!-- Tailwind CSS para o estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para os gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons para os ícones -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- SheetJS (xlsx) para exportação para Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        /* Estilo para a fonte e para esconder elementos */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap');
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900">
+
+    <!-- CABEÇALHO E NAVEGAÇÃO -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <nav class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-blue-600">Plano Orçamentário</h1>
+            <div class="flex items-center space-x-1 md:space-x-2">
+                <button data-tab="dashboard" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition bg-blue-600 text-white">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Dashboard</span>
+                </button>
+                <button data-tab="bills" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition text-gray-600 hover:bg-blue-100">
+                    <i data-lucide="credit-card" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Contas</span>
+                </button>
+                <button data-tab="investments" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition text-gray-600 hover:bg-blue-100">
+                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Investimentos</span>
+                </button>
+                <button data-tab="goals" class="tab-button flex items-center space-x-2 px-3 py-2 rounded-lg transition text-gray-600 hover:bg-blue-100">
+                    <i data-lucide="target" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Planos</span>
+                </button>
+                <label for="import-json-input" class="text-gray-600 hover:bg-blue-100 p-2 rounded-lg flex items-center space-x-2 cursor-pointer">
+                    <i data-lucide="upload" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Carregar (JSON)</span>
+                </label>
+                <input type="file" id="import-json-input" class="hidden" accept=".json">
+                <button id="save-json-button" class="text-gray-600 hover:bg-blue-100 p-2 rounded-lg flex items-center space-x-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span class="hidden md:inline">Salvar (JSON)</span>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="container mx-auto p-4 md:p-6">
+        <!-- Seção Dashboard -->
+        <div id="dashboard-content" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="dashboard-cards"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Últimas Transações</h3>
+                    <div class="space-y-2" id="recent-transactions-list"></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col justify-center items-center">
+                     <h3 class="text-lg font-bold text-gray-800 mb-4">Acesso Rápido</h3>
+                    <button id="add-transaction-button" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700 transition">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                        <span>Adicionar Nova Transação</span>
+                    </button>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Fluxo Mensal</h3>
+                <div class="h-72"><canvas id="monthly-flow-chart"></canvas></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos por Categoria</h3>
+                    <div class="h-72"><canvas id="category-pie-chart"></canvas></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Gastos por Forma de Pagamento</h3>
+                    <div class="h-72"><canvas id="payment-pie-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Seção Contas -->
+        <div id="bills-content" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-md">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">Contas Mensais</h2>
+                        <div class="flex items-center space-x-2">
+                             <button id="export-bills-button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-gray-300 transition text-sm">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                                <span>Exportar (XLSX)</span>
+                            </button>
+                            <button id="add-bill-button" class="bg-cyan-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-cyan-700 transition">
+                                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                                <span>Nova Conta</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="bills-list" class="space-y-3"></div>
+                </div>
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Resumo Financeiro</h3>
+                        <div id="bills-summary-cards" class="space-y-4"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 gap-6">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Gasto Presumido Diário no Mês Atual</h3>
+                    <div class="h-80"><canvas id="bills-current-month-chart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção Investimentos -->
+        <div id="investments-content" class="tab-content hidden space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="investments-cards"></div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <label for="cdi-rate-input" class="block text-sm font-medium text-gray-700">Taxa de Projeção Anual (%)</label>
+                <input type="number" id="cdi-rate-input" class="mt-1 block w-full max-w-xs p-2 border border-gray-300 rounded-md shadow-sm">
+                <p class="text-xs text-gray-500 mt-1">Use uma taxa geral (ex: CDI) para projetar o rendimento da carteira.</p>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                 <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold text-gray-800">Meus Investimentos</h2>
+                    <div class="flex items-center space-x-2">
+                         <button id="export-investments-button" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-gray-300 transition text-sm">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                            <span>Exportar (XLSX)</span>
+                        </button>
+                        <button id="add-investment-button" class="bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-indigo-700 transition">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                            <span>Novo Investimento</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="investments-list" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <!-- Seção Planos -->
+        <div id="goals-content" class="tab-content hidden space-y-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Meus Planos</h2>
+                <button id="add-goal-button" class="bg-teal-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-teal-700 transition">
+                    <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    <span>Novo Plano</span>
+                </button>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-6">
+                    <div id="goals-list" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <h3 class="text-lg font-bold text-gray-800 mb-4">Tempo para Atingir os Planos (em meses)</h3>
+                        <div class="h-72"><canvas id="goals-time-chart"></canvas></div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4">Ranking de Planos</h3>
+                    <div id="goals-ranking-list" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- MODAIS -->
+    <div id="modal-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+    
+    <div id="transaction-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="transaction-form" class="space-y-4">
+                <h2 class="text-xl font-bold text-gray-800">Nova Transação</h2>
+                <input type="hidden" id="transaction-type" value="saida">
+                <div class="flex justify-center space-x-2">
+                    <button type="button" id="type-entrada" class="px-4 py-2 rounded-lg w-full transition bg-gray-200">Entrada</button>
+                    <button type="button" id="type-saida" class="px-4 py-2 rounded-lg w-full transition bg-red-500 text-white">Saída</button>
+                </div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" id="transaction-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Descrição</label><input type="text" id="transaction-description" placeholder="Ex: Compras do mês" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Data</label><input type="date" id="transaction-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div id="saida-fields">
+                    <div><label class="block text-sm font-medium text-gray-700">Categoria do Gasto</label><select id="transaction-category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Necessidades</option><option>Lazer</option><option>Estudos</option><option>Transporte</option><option>Saúde</option><option>Outros</option></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700">Forma de Pagamento</label><select id="transaction-payment" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Crédito</option><option>Débito</option><option>Pix</option><option>Dinheiro</option><option>Transferência</option></select></div>
+                </div>
+                <div id="entrada-fields" class="hidden"><label class="block text-sm font-medium text-gray-700">Origem da Entrada</label><select id="transaction-source" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Salário</option><option>Freelance</option><option>Presente</option><option>Outros</option></select></div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Adicionar Transação</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="bill-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="bill-form" class="space-y-4">
+                <h2 id="bill-modal-title" class="text-xl font-bold text-gray-800">Nova Conta Mensal</h2>
+                <input type="hidden" id="bill-id">
+                <div><label class="block text-sm font-medium text-gray-700">Descrição</label><input type="text" id="bill-description" placeholder="Ex: Assinatura Spotify" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" id="bill-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Dia do Vencimento</label><input type="number" id="bill-dueDay" min="1" max="31" placeholder="Ex: 15" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /><p class="text-xs text-gray-500 mt-1">Informe o dia do mês que a conta vence.</p></div>
+                <button type="submit" class="w-full bg-cyan-600 text-white py-2 rounded-lg hover:bg-cyan-700 transition">Salvar Conta</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="investment-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="investment-form" class="space-y-4">
+                <h2 id="investment-modal-title" class="text-xl font-bold text-gray-800">Novo Investimento</h2>
+                <input type="hidden" id="investment-id">
+                <div><label class="block text-sm font-medium text-gray-700">Instituição</label><input type="text" id="investment-bank" placeholder="Ex: Nubank, XP, etc." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Tipo de Ativo</label><input type="text" id="investment-type" placeholder="Ex: CDB, LCA, FII" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor Atual</label><input type="number" id="investment-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">Salvar Investimento</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="goal-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="goal-form" class="space-y-4">
+                <h2 id="goal-modal-title" class="text-xl font-bold text-gray-800">Novo Plano</h2>
+                <input type="hidden" id="goal-id">
+                <div><label class="block text-sm font-medium text-gray-700">Nome do Plano</label><input type="text" id="goal-name" placeholder="Ex: Viagem dos sonhos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Meta de Valor</label><input type="number" id="goal-target" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Investimento Mensal</label><input type="number" id="goal-monthly-investment" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition">Salvar Plano</button>
+            </form>
+        </div>
+    </div>
+    
+    <div id="deposit-modal" class="fixed inset-0 z-50 flex justify-center items-center p-4 hidden">
+        <div class="bg-gray-100 rounded-xl shadow-2xl p-6 w-full max-w-md relative">
+            <button class="modal-close-button absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl leading-none">&times;</button>
+            <form id="deposit-form" class="space-y-4">
+                <h2 id="deposit-modal-title" class="text-xl font-bold text-gray-800">Adicionar Depósito</h2>
+                <input type="hidden" id="deposit-goal-id">
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" id="deposit-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition">Adicionar</button>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialData = {
+                transactions: [
+                    { id: 1, type: 'entrada', amount: 3415, description: 'Salário', date: new Date(new Date().setDate(5)).toISOString().split('T')[0], categoryTag: 'Salário', paymentTag: 'Transferência', user: 'Eu' },
+                    { id: 2, type: 'saida', amount: 1200, description: 'Aluguel', date: new Date(new Date().setDate(10)).toISOString().split('T')[0], categoryTag: 'Necessidades', paymentTag: 'Débito', user: 'Eu' },
+                    { id: 3, type: 'saida', amount: 150, description: 'Cinema e Jantar', date: new Date(new Date().setDate(15)).toISOString().split('T')[0], categoryTag: 'Lazer', paymentTag: 'Crédito', user: 'Eu' },
+                    { id: 4, type: 'saida', amount: 450, description: 'Supermercado', date: new Date(new Date().setDate(2)).toISOString().split('T')[0], categoryTag: 'Necessidades', paymentTag: 'Crédito', user: 'Eu' },
+                ],
+                goals: [ { id: 1, name: 'Viagem para o Pará', targetAmount: 4000, monthlyInvestment: 500, deposits: [{ id: 1, date: new Date().toISOString().split('T')[0], amount: 1000 }] } ],
+                investments: {
+                    projectionRate: 10.50,
+                    portfolio: [
+                        { id: 1, bank: 'Banco Inter', type: 'CDB 100% CDI', amount: 1500.50 },
+                        { id: 2, bank: 'XP Investimentos', type: 'FII MXRF11', amount: 850.75 },
+                    ]
+                },
+                bills: [
+                    { id: 1, description: 'Assinatura Spotify', amount: 21.90, dueDay: 10 },
+                    { id: 2, description: 'Plano de Celular', amount: 80.00, dueDay: 15 },
+                    { id: 3, description: 'Aluguel', amount: 1200.00, dueDay: 5 },
+                ]
+            };
+            
+            let state = {};
+            let chartInstances = {};
+
+            const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value || 0);
+            const getTodayDate = () => new Date().toISOString().split('T')[0];
+            const saveData = () => localStorage.setItem('financeApp', JSON.stringify(state));
+            
+            const loadData = () => {
+                const data = localStorage.getItem('financeApp');
+                const loadedState = data ? JSON.parse(data) : {};
+                
+                state = {
+                    activeTab: loadedState.activeTab || 'dashboard',
+                    transactions: loadedState.transactions || initialData.transactions,
+                    goals: loadedState.goals || initialData.goals,
+                    investments: loadedState.investments || initialData.investments,
+                    bills: loadedState.bills || initialData.bills
+                };
+
+                // FIX: Ensure nested portfolio array exists for backward compatibility
+                if (!state.investments.portfolio || !Array.isArray(state.investments.portfolio)) {
+                    state.investments.portfolio = initialData.investments.portfolio || [];
+                }
+            };
+
+            const openModal = (modalId) => {
+                document.getElementById(modalId).classList.remove('hidden');
+                document.getElementById('modal-backdrop').classList.remove('hidden');
+            };
+            const closeModal = () => {
+                document.querySelectorAll('.fixed.z-50').forEach(modal => modal.classList.add('hidden'));
+                document.getElementById('modal-backdrop').classList.add('hidden');
+            };
+
+            const renderAll = () => {
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                document.getElementById(`${state.activeTab}-content`).classList.remove('hidden');
+
+                document.querySelectorAll('.tab-button').forEach(button => {
+                    button.classList.toggle('bg-blue-600', button.dataset.tab === state.activeTab);
+                    button.classList.toggle('text-white', button.dataset.tab === state.activeTab);
+                    button.classList.toggle('text-gray-600', button.dataset.tab !== state.activeTab);
+                    button.classList.toggle('hover:bg-blue-100', button.dataset.tab !== state.activeTab);
+                });
+
+                if (state.activeTab === 'dashboard') renderDashboard();
+                if (state.activeTab === 'bills') renderBills();
+                if (state.activeTab === 'investments') renderInvestments();
+                if (state.activeTab === 'goals') renderGoals();
+                
+                lucide.createIcons();
+            };
+
+            const renderDashboard = () => {
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+                
+                const currentMonthTransactions = state.transactions.filter(t => {
+                    const tDate = new Date(t.date + 'T00:00:00Z'); // Use UTC to avoid timezone issues
+                    return tDate.getUTCFullYear() === currentYear && tDate.getUTCMonth() === currentMonth;
+                });
+
+                const entrada = currentMonthTransactions.filter(t => t.type === 'entrada').reduce((acc, t) => acc + t.amount, 0);
+                const saida = currentMonthTransactions.filter(t => t.type === 'saida').reduce((acc, t) => acc + t.amount, 0);
+                
+                const presumedExpensesTotal = state.bills.reduce((acc, bill) => acc + bill.amount, 0);
+                const finalBalance = entrada - saida - presumedExpensesTotal;
+
+                document.getElementById('dashboard-cards').innerHTML = `
+                    <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-emerald-100 text-emerald-600"><i data-lucide="arrow-up-circle"></i></div><div><p class="text-sm text-gray-500">Entradas do Mês</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(entrada)}</p></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-red-100 text-red-600"><i data-lucide="arrow-down-circle"></i></div><div><p class="text-sm text-gray-500">Saídas do Mês</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(saida)}</p></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-yellow-100 text-yellow-600"><i data-lucide="alert-circle"></i></div><div><p class="text-sm text-gray-500">Contas a Pagar</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(presumedExpensesTotal)}</p></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-blue-100 text-blue-600"><i data-lucide="check-circle-2"></i></div><div><p class="text-sm text-gray-500">Saldo Final Previsto</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(finalBalance)}</p></div></div>
+                `;
+
+                document.getElementById('recent-transactions-list').innerHTML = state.transactions.slice(0, 3).map(t => `<div class="flex justify-between items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100"><div><p class="font-semibold">${t.description}</p><p class="text-sm text-gray-500">${new Date(t.date + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${t.categoryTag}</p></div><div class="flex items-center space-x-4"><span class="font-bold ${t.type === 'entrada' ? 'text-emerald-600' : 'text-red-600'}">${t.type === 'entrada' ? '+' : '-'} ${formatCurrency(t.amount)}</span><button class="delete-transaction-button text-gray-400 hover:text-red-500" data-id="${t.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
+                
+                const monthlyDataMap = state.transactions.reduce((acc, t) => { const month = new Date(t.date + 'T00:00:00Z').toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' }); if (!acc[month]) acc[month] = { month, entrada: 0, saida: 0 }; if (t.type === 'entrada') acc[month].entrada += t.amount; else acc[month].saida += t.amount; return acc; }, {});
+                const monthlyData = Object.values(monthlyDataMap).reverse();
+                renderBarChart('monthly-flow-chart', monthlyData.map(d => d.month), [{ label: 'Entradas', data: monthlyData.map(d => d.entrada), backgroundColor: '#10B981' }, { label: 'Saídas', data: monthlyData.map(d => d.saida), backgroundColor: '#EF4444' }]);
+                const categoryData = state.transactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.categoryTag] = (acc[t.categoryTag] || 0) + t.amount; return acc; }, {});
+                renderPieChart('category-pie-chart', Object.keys(categoryData), Object.values(categoryData));
+                const paymentData = state.transactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.paymentTag] = (acc[t.paymentTag] || 0) + t.amount; return acc; }, {});
+                renderPieChart('payment-pie-chart', Object.keys(paymentData), Object.values(paymentData));
+            };
+            
+            const renderBills = () => {
+                const billsList = document.getElementById('bills-list');
+                const monthlyTotal = state.bills.reduce((acc, bill) => acc + bill.amount, 0);
+                const annualTotal = monthlyTotal * 12;
+                
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = now.getMonth();
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                const labels = [];
+                for (let i = 1; i <= daysInMonth; i++) {
+                    labels.push(`${String(i).padStart(2, '0')}`);
+                }
+
+                const data = Array(daysInMonth).fill(0);
+                state.bills.forEach(bill => {
+                    if (bill.dueDay >= 1 && bill.dueDay <= daysInMonth) {
+                        data[bill.dueDay - 1] += bill.amount;
+                    }
+                });
+                renderLineChart('bills-current-month-chart', labels, [{
+                    label: 'Gasto Presumido',
+                    data: data,
+                    borderColor: '#0891B2',
+                    backgroundColor: 'rgba(8, 145, 178, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]);
+                
+                document.getElementById('bills-summary-cards').innerHTML = `
+                    <div class="bg-white p-4 rounded-xl shadow-sm flex items-center"><div class="p-3 rounded-full mr-4 bg-cyan-100 text-cyan-600"><i data-lucide="wallet"></i></div><div><p class="text-sm text-gray-500">Custo Total Mensal</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(monthlyTotal)}</p></div></div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm flex items-center"><div class="p-3 rounded-full mr-4 bg-cyan-100 text-cyan-600"><i data-lucide="calendar"></i></div><div><p class="text-sm text-gray-500">Custo Anual Total</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(annualTotal)}</p></div></div>
+                `;
+
+                if (state.bills.length === 0) {
+                    billsList.innerHTML = `<div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl"><p class="text-gray-500">Nenhuma conta mensal cadastrada.</p></div>`;
+                    return;
+                }
+                billsList.innerHTML = state.bills.sort((a, b) => a.dueDay - b.dueDay).map(bill => `
+                    <div class="bg-gray-50 p-4 rounded-xl flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-800">${bill.description} <span class="text-xs font-normal text-gray-500">(ID: ${bill.id})</span></p>
+                            <p class="text-sm text-gray-500">Vence todo dia ${bill.dueDay}</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xl font-bold text-cyan-700">${formatCurrency(bill.amount)}</span>
+                            <button class="edit-bill-button text-gray-400 hover:text-blue-500" data-id="${bill.id}"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                            <button class="delete-bill-button text-gray-400 hover:text-red-500" data-id="${bill.id}"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            const renderInvestments = () => {
+                const { projectionRate, portfolio } = state.investments;
+                document.getElementById('cdi-rate-input').value = projectionRate;
+                const totalInvested = portfolio.reduce((acc, inv) => acc + inv.amount, 0);
+                const dailyRate = Math.pow(1 + (projectionRate / 100), 1/252) - 1;
+                const project = (days) => totalInvested * Math.pow(1 + dailyRate, days);
+                document.getElementById('investments-cards').innerHTML = `<div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-indigo-100 text-indigo-600"><i data-lucide="trending-up"></i></div><div><p class="text-sm text-gray-500">Total Investido</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(totalInvested)}</p></div></div><div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-gray-100 text-gray-600"><i data-lucide="trending-up"></i></div><div><p class="text-sm text-gray-500">Projeção 3 Meses</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(project(63))}</p></div></div><div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-gray-100 text-gray-600"><i data-lucide="trending-up"></i></div><div><p class="text-sm text-gray-500">Projeção 6 Meses</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(project(126))}</p></div></div><div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-gray-100 text-gray-600"><i data-lucide="trending-up"></i></div><div><p class="text-sm text-gray-500">Projeção 1 Ano</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(project(252))}</p></div></div>`;
+                
+                const investmentsList = document.getElementById('investments-list');
+                 if (portfolio.length === 0) {
+                    investmentsList.innerHTML = `<div class="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl"><p class="text-gray-500">Nenhum investimento cadastrado.</p></div>`;
+                    return;
+                }
+                investmentsList.innerHTML = portfolio.map(inv => `
+                    <div class="bg-gray-50 p-4 rounded-xl flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-gray-800">${inv.type} <span class="font-normal text-gray-600">em ${inv.bank}</span></p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xl font-bold text-indigo-700">${formatCurrency(inv.amount)}</span>
+                            <button class="edit-investment-button text-gray-400 hover:text-blue-500" data-id="${inv.id}"><i data-lucide="pencil" class="w-5 h-5"></i></button>
+                            <button class="delete-investment-button text-gray-400 hover:text-red-500" data-id="${inv.id}"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            const renderGoals = () => {
+                const goalsWithCalc = state.goals.map(goal => {
+                    const savedAmount = goal.deposits.reduce((acc, d) => acc + d.amount, 0);
+                    const remainingAmount = goal.targetAmount - savedAmount;
+                    const monthsLeft = remainingAmount > 0 && goal.monthlyInvestment > 0 ? Math.ceil(remainingAmount / goal.monthlyInvestment) : 0;
+                    
+                    let completionDate = 'N/A';
+                    if (monthsLeft > 0) {
+                        const date = new Date();
+                        date.setMonth(date.getMonth() + monthsLeft);
+                        completionDate = date.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    }
+
+                    return { ...goal, savedAmount, monthsLeft, completionDate };
+                });
+
+                document.getElementById('goals-list').innerHTML = goalsWithCalc.map(goal => {
+                    const progress = goal.targetAmount > 0 ? (goal.savedAmount / goal.targetAmount) * 100 : 0;
+                    return `<div class="bg-white p-6 rounded-xl shadow-md space-y-3 flex flex-col">
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-start"> <div><h3 class="text-lg font-bold text-gray-800">${goal.name}</h3><p class="text-sm text-gray-500">Meta: ${formatCurrency(goal.targetAmount)}</p></div> <button class="delete-goal-button text-gray-400 hover:text-red-500" data-id="${goal.id}"><i data-lucide="trash-2" class="w-5 h-5"></i></button> </div>
+                            <div> <div class="flex justify-between text-sm font-medium text-gray-600 mb-1"><span>${formatCurrency(goal.savedAmount)}</span><span>${progress.toFixed(1)}%</span></div> <div class="w-full bg-gray-200 rounded-full h-4"><div class="bg-teal-500 h-4 rounded-full" style="width: ${Math.min(progress, 100)}%;"></div></div> </div>
+                            <div class="text-sm text-gray-600 mt-2">
+                                <p>Faltam <span class="font-bold">${goal.monthsLeft} meses</span> para concluir.</p>
+                                <p>Previsão: <span class="font-bold">${goal.completionDate}</span></p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 mt-4">
+                            <button class="add-deposit-button w-full bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition text-sm" data-id="${goal.id}" data-name="${goal.name}">Aportar</button>
+                            <button class="edit-goal-button w-full bg-gray-200 text-gray-800 py-2 rounded-lg hover:bg-gray-300 transition text-sm" data-id="${goal.id}">Editar</button>
+                        </div>
+                    </div>`;
+                }).join('');
+
+                const rankedGoals = [...goalsWithCalc].sort((a, b) => a.monthsLeft - b.monthsLeft);
+                document.getElementById('goals-ranking-list').innerHTML = rankedGoals.map((goal, index) => `
+                    <div class="flex items-center">
+                        <div class="text-lg font-bold text-gray-400 mr-4">${index + 1}º</div>
+                        <div>
+                            <p class="font-semibold text-gray-800">${goal.name}</p>
+                            <p class="text-sm text-gray-500">${goal.monthsLeft} meses restantes</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                renderBarChart('goals-time-chart', rankedGoals.map(g => g.name), [{ label: 'Meses Restantes', data: rankedGoals.map(g => g.monthsLeft), backgroundColor: '#14B8A6' }]);
+            };
+            
+            const renderChart = (canvasId, type, labels, datasets, options = {}) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (chartInstances[canvasId]) { chartInstances[canvasId].data.labels = labels; chartInstances[canvasId].data.datasets = datasets; chartInstances[canvasId].update(); } else { chartInstances[canvasId] = new Chart(ctx, { type, data: { labels, datasets }, options: { responsive: true, maintainAspectRatio: false, ...options } }); }
+            };
+
+            const renderBarChart = (id, labels, datasets) => renderChart(id, 'bar', labels, datasets);
+            const renderPieChart = (id, labels, data) => renderChart(id, 'pie', labels, [{ data, backgroundColor: ['#0891B2', '#0E7490', '#155E75', '#0369A1', '#075985', '#0284C7', '#006B9F'] }]);
+            const renderLineChart = (id, labels, datasets) => renderChart(id, 'line', labels, datasets);
+
+            document.querySelector('nav').addEventListener('click', (e) => { const button = e.target.closest('.tab-button'); if (button && state.activeTab !== button.dataset.tab) { state.activeTab = button.dataset.tab; renderAll(); } });
+
+            document.body.addEventListener('click', (e) => {
+                const target = e.target.closest('button');
+                if (!target) return;
+                if (target.classList.contains('modal-close-button')) closeModal();
+                if (target.classList.contains('delete-transaction-button')) { state.transactions = state.transactions.filter(t => t.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
+                if (target.classList.contains('delete-bill-button')) { state.bills = state.bills.filter(b => b.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
+                if (target.classList.contains('edit-bill-button')) {
+                    const bill = state.bills.find(b => b.id === parseInt(target.dataset.id));
+                    if (bill) {
+                        document.getElementById('bill-modal-title').textContent = "Editar Conta Mensal";
+                        document.getElementById('bill-id').value = bill.id;
+                        document.getElementById('bill-description').value = bill.description;
+                        document.getElementById('bill-amount').value = bill.amount;
+                        document.getElementById('bill-dueDay').value = bill.dueDay;
+                        openModal('bill-modal');
+                    }
+                }
+                if (target.classList.contains('delete-investment-button')) { state.investments.portfolio = state.investments.portfolio.filter(i => i.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
+                if (target.classList.contains('edit-investment-button')) {
+                    const investment = state.investments.portfolio.find(i => i.id === parseInt(target.dataset.id));
+                    if (investment) {
+                        document.getElementById('investment-modal-title').textContent = "Editar Investimento";
+                        document.getElementById('investment-id').value = investment.id;
+                        document.getElementById('investment-bank').value = investment.bank;
+                        document.getElementById('investment-type').value = investment.type;
+                        document.getElementById('investment-amount').value = investment.amount;
+                        openModal('investment-modal');
+                    }
+                }
+                if (target.classList.contains('delete-goal-button')) { state.goals = state.goals.filter(g => g.id !== parseInt(target.dataset.id)); saveData(); renderAll(); }
+                if (target.classList.contains('edit-goal-button')) {
+                    const goal = state.goals.find(g => g.id === parseInt(target.dataset.id));
+                    if(goal) {
+                        document.getElementById('goal-modal-title').textContent = "Editar Plano";
+                        document.getElementById('goal-id').value = goal.id;
+                        document.getElementById('goal-name').value = goal.name;
+                        document.getElementById('goal-target').value = goal.targetAmount;
+                        document.getElementById('goal-monthly-investment').value = goal.monthlyInvestment;
+                        openModal('goal-modal');
+                    }
+                }
+                if (target.classList.contains('add-deposit-button')) { document.getElementById('deposit-goal-id').value = target.dataset.id; document.getElementById('deposit-modal-title').textContent = `Adicionar Depósito para "${target.dataset.name}"`; document.getElementById('deposit-form').reset(); openModal('deposit-modal'); }
+            });
+
+            document.getElementById('add-transaction-button').addEventListener('click', () => { document.getElementById('transaction-form').reset(); document.getElementById('transaction-date').value = getTodayDate(); openModal('transaction-modal'); });
+            document.getElementById('add-bill-button').addEventListener('click', () => { document.getElementById('bill-form').reset(); document.getElementById('bill-id').value = ''; document.getElementById('bill-modal-title').textContent = "Nova Conta Mensal"; openModal('bill-modal'); });
+            document.getElementById('add-investment-button').addEventListener('click', () => { document.getElementById('investment-form').reset(); document.getElementById('investment-id').value = ''; document.getElementById('investment-modal-title').textContent = "Novo Investimento"; openModal('investment-modal'); });
+            document.getElementById('add-goal-button').addEventListener('click', () => { document.getElementById('goal-form').reset(); document.getElementById('goal-id').value = ''; document.getElementById('goal-modal-title').textContent = "Novo Plano"; openModal('goal-modal'); });
+
+            document.getElementById('transaction-form').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('transaction-type').value; state.transactions.unshift({ id: Date.now(), type, user: 'Eu', amount: parseFloat(document.getElementById('transaction-amount').value), description: document.getElementById('transaction-description').value, date: document.getElementById('transaction-date').value, categoryTag: type === 'saida' ? document.getElementById('transaction-category').value : document.getElementById('transaction-source').value, paymentTag: type === 'saida' ? document.getElementById('transaction-payment').value : 'Transferência', }); saveData(); closeModal(); renderAll(); });
+            document.getElementById('bill-form').addEventListener('submit', (e) => { e.preventDefault(); const billId = document.getElementById('bill-id').value; const billData = { description: document.getElementById('bill-description').value, amount: parseFloat(document.getElementById('bill-amount').value), dueDay: parseInt(document.getElementById('bill-dueDay').value) }; if (billId) { const index = state.bills.findIndex(b => b.id === parseInt(billId)); if (index !== -1) { state.bills[index] = { ...state.bills[index], ...billData }; } } else { state.bills.push({ id: Date.now(), ...billData }); } saveData(); closeModal(); renderAll(); });
+            document.getElementById('investment-form').addEventListener('submit', (e) => { e.preventDefault(); const invId = document.getElementById('investment-id').value; const invData = { bank: document.getElementById('investment-bank').value, type: document.getElementById('investment-type').value, amount: parseFloat(document.getElementById('investment-amount').value) }; if (invId) { const index = state.investments.portfolio.findIndex(i => i.id === parseInt(invId)); if (index !== -1) { state.investments.portfolio[index] = { ...state.investments.portfolio[index], ...invData }; } } else { state.investments.portfolio.push({ id: Date.now(), ...invData }); } saveData(); closeModal(); renderAll(); });
+            document.getElementById('goal-form').addEventListener('submit', (e) => { e.preventDefault(); const goalId = document.getElementById('goal-id').value; const goalData = { name: document.getElementById('goal-name').value, targetAmount: parseFloat(document.getElementById('goal-target').value), monthlyInvestment: parseFloat(document.getElementById('goal-monthly-investment').value) }; if (goalId) { const index = state.goals.findIndex(g => g.id === parseInt(goalId)); if (index !== -1) { state.goals[index] = { ...state.goals[index], ...goalData }; } } else { state.goals.push({ id: Date.now(), ...goalData, deposits: [] }); } saveData(); closeModal(); renderAll(); });
+            
+            document.getElementById('type-entrada').addEventListener('click', () => { document.getElementById('transaction-type').value = 'entrada'; document.getElementById('type-entrada').classList.add('bg-emerald-500', 'text-white'); document.getElementById('type-saida').classList.remove('bg-red-500', 'text-white'); document.getElementById('saida-fields').classList.add('hidden'); document.getElementById('entrada-fields').classList.remove('hidden'); });
+            document.getElementById('type-saida').addEventListener('click', () => { document.getElementById('transaction-type').value = 'saida'; document.getElementById('type-saida').classList.add('bg-red-500', 'text-white'); document.getElementById('type-entrada').classList.remove('bg-emerald-500', 'text-white'); document.getElementById('entrada-fields').classList.add('hidden'); document.getElementById('saida-fields').classList.remove('hidden'); });
+            
+            document.getElementById('deposit-form').addEventListener('submit', e => { e.preventDefault(); const goal = state.goals.find(g => g.id === parseInt(document.getElementById('deposit-goal-id').value)); if (goal) { goal.deposits.push({ id: Date.now(), date: getTodayDate(), amount: parseFloat(document.getElementById('deposit-amount').value) }); saveData(); closeModal(); renderAll(); } });
+            document.getElementById('cdi-rate-input').addEventListener('change', (e) => { state.investments.projectionRate = parseFloat(e.target.value) || 0; saveData(); renderInvestments(); });
+
+            document.getElementById('save-json-button').addEventListener('click', () => {
+                const jsonString = JSON.stringify(state, null, 2);
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'dados_orcamento.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            document.getElementById('export-bills-button').addEventListener('click', () => {
+                const billsWs = XLSX.utils.json_to_sheet(state.bills.map(b => ({ 'Descrição': b.description, 'Valor Mensal': b.amount, 'Dia do Vencimento': b.dueDay })));
+                billsWs['!cols'] = [ { wch: 30 }, { wch: 15 }, { wch: 20 } ];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, billsWs, "Contas Mensais");
+                XLSX.writeFile(wb, "PlanoOrcamentario_Contas.xlsx");
+            });
+
+            document.getElementById('export-investments-button').addEventListener('click', () => {
+                const ws = XLSX.utils.json_to_sheet(state.investments.portfolio.map(inv => ({ 'Instituição': inv.bank, 'Tipo': inv.type, 'Valor Atual': inv.amount })));
+                ws['!cols'] = [ { wch: 20 }, { wch: 20 }, { wch: 15 } ];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Investimentos");
+                XLSX.writeFile(wb, "PlanoOrcamentario_Investimentos.xlsx");
+            });
+
+            document.getElementById('import-json-input').addEventListener('change', (e) => {
+                const file = e.target.files[0]; if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const importedState = JSON.parse(event.target.result);
+                        if (importedState.transactions && importedState.bills && importedState.investments && importedState.goals) {
+                            state = importedState;
+                            saveData();
+                            renderAll();
+                            alert('Dados importados com sucesso!');
+                        } else {
+                            throw new Error("Arquivo JSON inválido ou não corresponde ao formato esperado.");
+                        }
+                    } catch (error) {
+                        console.error("Erro ao importar arquivo JSON:", error);
+                        alert(`Ocorreu um erro ao importar o arquivo. Detalhe: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+                e.target.value = '';
+            });
+
+            loadData();
+            renderAll();
+        });
+    </script>
+</body>
+</html>
