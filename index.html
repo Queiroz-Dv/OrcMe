@@ -157,11 +157,11 @@
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas a Pagar (<span id="pending-subs-count">0</span>)</h3>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas a Pagar</h3>
                         <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="subscriptions-pending-list"></div>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas Pagas no Mês (<span id="paid-subs-count">0</span>)</h3>
+                        <h3 class="text-lg font-bold text-gray-800 mb-2">Assinaturas Pagas no Mês</h3>
                         <div class="space-y-3 max-h-96 overflow-y-auto pr-2" id="subscriptions-paid-list"></div>
                     </div>
                 </div>
@@ -492,6 +492,8 @@
             const renderSubscriptions = () => {
                 const now = new Date();
                 const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+                const nextMonthDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                const nextMonthKey = `${nextMonthDate.getFullYear()}-${nextMonthDate.getMonth()}`;
 
                 const pendingList = document.getElementById('subscriptions-pending-list');
                 const paidList = document.getElementById('subscriptions-paid-list');
@@ -499,25 +501,48 @@
                 const pendingSubs = state.subscriptions.filter(s => !s.paidMonths.includes(currentMonthKey));
                 const paidSubs = state.subscriptions.filter(s => s.paidMonths.includes(currentMonthKey));
 
-                document.getElementById('pending-subs-count').textContent = pendingSubs.length;
-                document.getElementById('paid-subs-count').textContent = paidSubs.length;
+                let pendingListHTML = '';
+                const currentMonthName = now.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                pendingListHTML += `<h4 class="text-md font-semibold text-gray-600 mb-2 capitalize">${currentMonthName}</h4>`;
 
-                pendingList.innerHTML = pendingSubs.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
-                    <div class="bg-gray-50 p-4 rounded-xl">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="font-bold text-gray-800">${sub.description}</p>
-                                <p class="text-sm text-gray-500">Vence dia ${sub.dueDay} - ${sub.tag}</p>
+                if (pendingSubs.length > 0) {
+                    pendingListHTML += pendingSubs.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
+                        <div class="bg-gray-50 p-4 rounded-xl">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-gray-800">${sub.description}</p>
+                                    <p class="text-sm text-gray-500">Vence dia ${sub.dueDay} - ${sub.tag}</p>
+                                </div>
+                                <span class="text-xl font-bold text-purple-700">${formatCurrency(sub.amount)}</span>
                             </div>
-                            <span class="text-xl font-bold text-purple-700">${formatCurrency(sub.amount)}</span>
+                            <div class="flex items-center space-x-2 mt-3">
+                                <button class="pay-subscription-button w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition text-sm" data-id="${sub.id}" data-month-key="${currentMonthKey}">Marcar como Pago</button>
+                                <button class="edit-subscription-button text-gray-400 hover:text-blue-500 p-2" data-id="${sub.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button class="delete-subscription-button text-gray-400 hover:text-red-500 p-2" data-id="${sub.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
                         </div>
-                        <div class="flex items-center space-x-2 mt-3">
-                            <button class="pay-subscription-button w-full bg-emerald-500 text-white py-2 rounded-lg hover:bg-emerald-600 transition text-sm" data-id="${sub.id}">Marcar como Pago</button>
-                            <button class="edit-subscription-button text-gray-400 hover:text-blue-500 p-2" data-id="${sub.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                            <button class="delete-subscription-button text-gray-400 hover:text-red-500 p-2" data-id="${sub.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    `).join('');
+                } else {
+                    pendingListHTML += `<p class="text-sm text-gray-500">Nenhuma assinatura pendente para este mês.</p>`;
+                }
+
+                // Show next month's subscriptions if current month is clear
+                if (pendingSubs.length === 0 && state.subscriptions.length > 0) {
+                    const nextMonthName = nextMonthDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    pendingListHTML += `<h4 class="text-md font-semibold text-gray-600 mt-6 mb-2 capitalize">${nextMonthName}</h4>`;
+                    pendingListHTML += state.subscriptions.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
+                        <div class="bg-gray-50 p-4 rounded-xl opacity-70">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="font-bold text-gray-800">${sub.description}</p>
+                                    <p class="text-sm text-gray-500">Vence dia ${sub.dueDay} - ${sub.tag}</p>
+                                </div>
+                                <span class="text-xl font-bold text-purple-700">${formatCurrency(sub.amount)}</span>
+                            </div>
                         </div>
-                    </div>
-                `).join('');
+                    `).join('');
+                }
+                pendingList.innerHTML = pendingListHTML;
                 
                 paidList.innerHTML = paidSubs.sort((a,b) => a.dueDay - b.dueDay).map(sub => `
                     <div class="bg-gray-50 p-4 rounded-xl opacity-60">
@@ -530,6 +555,7 @@
                         </div>
                         <div class="flex items-center space-x-2 mt-3">
                             <button class="unpay-subscription-button w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition text-sm" data-id="${sub.id}">Mover para Pendente</button>
+                             <button class="delete-subscription-button text-gray-400 hover:text-red-500 p-2" data-id="${sub.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                         </div>
                     </div>
                 `).join('');
@@ -681,11 +707,10 @@
                 }
                  if (target.classList.contains('pay-subscription-button')) {
                     const subId = parseInt(target.dataset.id);
-                    const now = new Date();
-                    const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+                    const monthKeyToPay = target.dataset.monthKey;
                     const sub = state.subscriptions.find(s => s.id === subId);
-                    if (sub && !sub.paidMonths.includes(currentMonthKey)) {
-                        sub.paidMonths.push(currentMonthKey);
+                    if (sub && !sub.paidMonths.includes(monthKeyToPay)) {
+                        sub.paidMonths.push(monthKeyToPay);
                         saveData();
                         renderAll();
                     }
