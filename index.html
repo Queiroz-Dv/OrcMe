@@ -196,14 +196,14 @@
                     <button type="button" id="type-entrada" class="px-4 py-2 rounded-lg w-full transition bg-gray-200">Entrada</button>
                     <button type="button" id="type-saida" class="px-4 py-2 rounded-lg w-full transition bg-red-500 text-white">Saída</button>
                 </div>
-                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" id="transaction-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" step="0.01" id="transaction-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <div><label class="block text-sm font-medium text-gray-700">Descrição</label><input type="text" id="transaction-description" placeholder="Ex: Compras do mês" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <div><label class="block text-sm font-medium text-gray-700">Data</label><input type="date" id="transaction-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <div id="saida-fields">
                     <div><label class="block text-sm font-medium text-gray-700">Categoria do Gasto</label><select id="transaction-category" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Necessidades</option><option>Lazer</option><option>Estudos</option><option>Transporte</option><option>Saúde</option><option>Outros</option></select></div>
                     <div><label class="block text-sm font-medium text-gray-700">Forma de Pagamento</label><select id="transaction-payment" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Crédito</option><option>Débito</option><option>Pix</option><option>Dinheiro</option><option>Transferência</option></select></div>
                 </div>
-                <div id="entrada-fields" class="hidden"><label class="block text-sm font-medium text-gray-700">Origem da Entrada</label><select id="transaction-source" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm"><option>Salário</option><option>Freelance</option><option>Presente</option><option>Outros</option></select></div>
+                <div id="entrada-fields" class="hidden"><p class="text-sm text-gray-600">Origem da entrada será salva como "Salário".</p></div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Adicionar Transação</button>
             </form>
         </div>
@@ -231,7 +231,7 @@
                 <input type="hidden" id="investment-id">
                 <div><label class="block text-sm font-medium text-gray-700">Instituição</label><input type="text" id="investment-bank" placeholder="Ex: Nubank, XP, etc." class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <div><label class="block text-sm font-medium text-gray-700">Tipo de Ativo</label><input type="text" id="investment-type" placeholder="Ex: CDB, LCA, FII" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Valor Atual</label><input type="number" id="investment-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor Atual</label><input type="number" step="0.01" id="investment-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition">Salvar Investimento</button>
             </form>
         </div>
@@ -244,8 +244,8 @@
                 <h2 id="goal-modal-title" class="text-xl font-bold text-gray-800">Novo Plano</h2>
                 <input type="hidden" id="goal-id">
                 <div><label class="block text-sm font-medium text-gray-700">Nome do Plano</label><input type="text" id="goal-name" placeholder="Ex: Viagem dos sonhos" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Meta de Valor</label><input type="number" id="goal-target" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
-                <div><label class="block text-sm font-medium text-gray-700">Investimento Mensal</label><input type="number" id="goal-monthly-investment" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Meta de Valor</label><input type="number" step="0.01" id="goal-target" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Investimento Mensal</label><input type="number" step="0.01" id="goal-monthly-investment" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition">Salvar Plano</button>
             </form>
         </div>
@@ -257,7 +257,7 @@
             <form id="deposit-form" class="space-y-4">
                 <h2 id="deposit-modal-title" class="text-xl font-bold text-gray-800">Adicionar Depósito</h2>
                 <input type="hidden" id="deposit-goal-id">
-                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" id="deposit-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
+                <div><label class="block text-sm font-medium text-gray-700">Valor</label><input type="number" step="0.01" id="deposit-amount" placeholder="R$ 0,00" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm" required /></div>
                 <button type="submit" class="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition">Adicionar</button>
             </form>
         </div>
@@ -268,12 +268,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const initialData = {
                 transactions: [
-                    { id: 1, type: 'entrada', amount: 10000, description: 'Salário', date: new Date(new Date().setDate(5)).toISOString().split('T')[0], categoryTag: 'Salário', paymentTag: 'Transferência', user: 'Eu' },
+                    { id: 1, type: 'entrada', amount: 3415, description: 'Salário', date: new Date(new Date().setDate(5)).toISOString().split('T')[0], categoryTag: 'Salário', paymentTag: 'Transferência', user: 'Eu' },
                     { id: 2, type: 'saida', amount: 1200, description: 'Aluguel', date: new Date(new Date().setDate(10)).toISOString().split('T')[0], categoryTag: 'Necessidades', paymentTag: 'Débito', user: 'Eu' },
                     { id: 3, type: 'saida', amount: 150, description: 'Cinema e Jantar', date: new Date(new Date().setDate(15)).toISOString().split('T')[0], categoryTag: 'Lazer', paymentTag: 'Crédito', user: 'Eu' },
                     { id: 4, type: 'saida', amount: 450, description: 'Supermercado', date: new Date(new Date().setDate(2)).toISOString().split('T')[0], categoryTag: 'Necessidades', paymentTag: 'Crédito', user: 'Eu' },
                 ],
-                goals: [ { id: 1, name: 'Viagem para o norte', targetAmount: 4000, monthlyInvestment: 500, deposits: [{ id: 1, date: new Date().toISOString().split('T')[0], amount: 1000 }] } ],
+                goals: [ { id: 1, name: 'Viagem para o Pará', targetAmount: 4000, monthlyInvestment: 500, deposits: [{ id: 1, date: new Date().toISOString().split('T')[0], amount: 1000 }] } ],
                 investments: {
                     projectionRate: 10.50,
                     portfolio: [
@@ -566,7 +566,7 @@
             document.getElementById('add-investment-button').addEventListener('click', () => { document.getElementById('investment-form').reset(); document.getElementById('investment-id').value = ''; document.getElementById('investment-modal-title').textContent = "Novo Investimento"; openModal('investment-modal'); });
             document.getElementById('add-goal-button').addEventListener('click', () => { document.getElementById('goal-form').reset(); document.getElementById('goal-id').value = ''; document.getElementById('goal-modal-title').textContent = "Novo Plano"; openModal('goal-modal'); });
 
-            document.getElementById('transaction-form').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('transaction-type').value; state.transactions.unshift({ id: Date.now(), type, user: 'Eu', amount: parseFloat(document.getElementById('transaction-amount').value), description: document.getElementById('transaction-description').value, date: document.getElementById('transaction-date').value, categoryTag: type === 'saida' ? document.getElementById('transaction-category').value : document.getElementById('transaction-source').value, paymentTag: type === 'saida' ? document.getElementById('transaction-payment').value : 'Transferência', }); saveData(); closeModal(); renderAll(); });
+            document.getElementById('transaction-form').addEventListener('submit', (e) => { e.preventDefault(); const type = document.getElementById('transaction-type').value; state.transactions.unshift({ id: Date.now(), type, user: 'Eu', amount: parseFloat(document.getElementById('transaction-amount').value), description: document.getElementById('transaction-description').value, date: document.getElementById('transaction-date').value, categoryTag: type === 'saida' ? document.getElementById('transaction-category').value : 'Salário', paymentTag: type === 'saida' ? document.getElementById('transaction-payment').value : 'Transferência', }); saveData(); closeModal(); renderAll(); });
             document.getElementById('bill-form').addEventListener('submit', (e) => { e.preventDefault(); const billId = document.getElementById('bill-id').value; const billData = { description: document.getElementById('bill-description').value, amount: parseFloat(document.getElementById('bill-amount').value), dueDay: parseInt(document.getElementById('bill-dueDay').value) }; if (billId) { const index = state.bills.findIndex(b => b.id === parseInt(billId)); if (index !== -1) { state.bills[index] = { ...state.bills[index], ...billData }; } } else { state.bills.push({ id: Date.now(), ...billData }); } saveData(); closeModal(); renderAll(); });
             document.getElementById('investment-form').addEventListener('submit', (e) => { e.preventDefault(); const invId = document.getElementById('investment-id').value; const invData = { bank: document.getElementById('investment-bank').value, type: document.getElementById('investment-type').value, amount: parseFloat(document.getElementById('investment-amount').value) }; if (invId) { const index = state.investments.portfolio.findIndex(i => i.id === parseInt(invId)); if (index !== -1) { state.investments.portfolio[index] = { ...state.investments.portfolio[index], ...invData }; } } else { state.investments.portfolio.push({ id: Date.now(), ...invData }); } saveData(); closeModal(); renderAll(); });
             document.getElementById('goal-form').addEventListener('submit', (e) => { e.preventDefault(); const goalId = document.getElementById('goal-id').value; const goalData = { name: document.getElementById('goal-name').value, targetAmount: parseFloat(document.getElementById('goal-target').value), monthlyInvestment: parseFloat(document.getElementById('goal-monthly-investment').value) }; if (goalId) { const index = state.goals.findIndex(g => g.id === parseInt(goalId)); if (index !== -1) { state.goals[index] = { ...state.goals[index], ...goalData }; } } else { state.goals.push({ id: Date.now(), ...goalData, deposits: [] }); } saveData(); closeModal(); renderAll(); });
