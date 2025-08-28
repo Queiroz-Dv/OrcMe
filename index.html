@@ -86,7 +86,7 @@
 
             <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
                 <h3 class="text-lg font-bold text-gray-800 mb-4">Movimentações do Mês</h3>
-                <div class="space-y-2 flex-grow max-h-72 overflow-y-auto pr-2" id="recent-transactions-list">
+                <div class="space-y-2 max-h-72 overflow-y-auto pr-2" id="recent-transactions-list">
                     <!-- Transactions will be rendered here -->
                 </div>
                 <div class="pt-4 mt-4 border-t" id="transactions-summary">
@@ -377,14 +377,29 @@
                     <div class="bg-white p-4 rounded-xl shadow-md flex items-center"><div class="p-3 rounded-full mr-4 bg-blue-100 text-blue-600"><i data-lucide="check-circle-2"></i></div><div><p class="text-sm text-gray-500">Saldo Final Previsto</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(finalBalance)}</p></div></div>
                 `;
 
-                document.getElementById('recent-transactions-list').innerHTML = state.transactions.slice(0, 3).map(t => `<div class="flex justify-between items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100"><div><p class="font-semibold">${t.description}</p><p class="text-sm text-gray-500">${new Date(t.date + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${t.categoryTag}</p></div><div class="flex items-center space-x-4"><span class="font-bold ${t.type === 'entrada' ? 'text-emerald-600' : 'text-red-600'}">${t.type === 'entrada' ? '+' : '-'} ${formatCurrency(t.amount)}</span><button class="edit-transaction-button text-gray-400 hover:text-blue-500" data-id="${t.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="delete-transaction-button text-gray-400 hover:text-red-500" data-id="${t.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
+                document.getElementById('recent-transactions-list').innerHTML = currentMonthTransactions.map(t => `<div class="flex justify-between items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100"><div><p class="font-semibold">${t.description}</p><p class="text-sm text-gray-500">${new Date(t.date + 'T00:00:00Z').toLocaleDateString('pt-BR', {timeZone: 'UTC'})} - ${t.categoryTag}</p></div><div class="flex items-center space-x-4"><span class="font-bold ${t.type === 'entrada' ? 'text-emerald-600' : 'text-red-600'}">${t.type === 'entrada' ? '+' : '-'} ${formatCurrency(t.amount)}</span><button class="edit-transaction-button text-gray-400 hover:text-blue-500" data-id="${t.id}"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="delete-transaction-button text-gray-400 hover:text-red-500" data-id="${t.id}"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div></div>`).join('');
                 
+                document.getElementById('transactions-summary').innerHTML = `
+                    <div class="flex justify-between text-lg">
+                        <span class="font-semibold text-gray-600">Total Entradas:</span>
+                        <span class="font-bold text-emerald-600">${formatCurrency(entrada)}</span>
+                    </div>
+                    <div class="flex justify-between text-lg">
+                        <span class="font-semibold text-gray-600">Total Saídas:</span>
+                        <span class="font-bold text-red-600">${formatCurrency(saida)}</span>
+                    </div>
+                    <div class="flex justify-between text-xl mt-2">
+                        <span class="font-bold text-gray-800">Saldo do Mês:</span>
+                        <span class="font-bold ${entrada - saida >= 0 ? 'text-blue-600' : 'text-red-600'}">${formatCurrency(entrada - saida)}</span>
+                    </div>
+                `;
+
                 const monthlyDataMap = state.transactions.reduce((acc, t) => { const month = new Date(t.date + 'T00:00:00Z').toLocaleString('pt-BR', { month: 'short', year: '2-digit', timeZone: 'UTC' }); if (!acc[month]) acc[month] = { month, entrada: 0, saida: 0 }; if (t.type === 'entrada') acc[month].entrada += t.amount; else acc[month].saida += t.amount; return acc; }, {});
                 const monthlyData = Object.values(monthlyDataMap).reverse();
                 renderBarChart('monthly-flow-chart', monthlyData.map(d => d.month), [{ label: 'Entradas', data: monthlyData.map(d => d.entrada), backgroundColor: '#10B981' }, { label: 'Saídas', data: monthlyData.map(d => d.saida), backgroundColor: '#EF4444' }]);
-                const categoryData = state.transactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.categoryTag] = (acc[t.categoryTag] || 0) + t.amount; return acc; }, {});
+                const categoryData = currentMonthTransactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.categoryTag] = (acc[t.categoryTag] || 0) + t.amount; return acc; }, {});
                 renderPieChart('category-pie-chart', Object.keys(categoryData), Object.values(categoryData));
-                const paymentData = state.transactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.paymentTag] = (acc[t.paymentTag] || 0) + t.amount; return acc; }, {});
+                const paymentData = currentMonthTransactions.filter(t => t.type === 'saida').reduce((acc, t) => { acc[t.paymentTag] = (acc[t.paymentTag] || 0) + t.amount; return acc; }, {});
                 renderPieChart('payment-pie-chart', Object.keys(paymentData), Object.values(paymentData));
             };
             
