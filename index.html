@@ -750,6 +750,7 @@
             document.getElementById('add-bill-button').addEventListener('click', () => { document.getElementById('bill-form').reset(); document.getElementById('bill-id').value = ''; document.getElementById('bill-modal-title').textContent = "Nova Conta Mensal"; openModal('bill-modal'); });
             document.getElementById('add-subscription-button').addEventListener('click', () => { document.getElementById('subscription-form').reset(); document.getElementById('subscription-id').value = ''; document.getElementById('subscription-modal-title').textContent = "Nova Assinatura"; openModal('subscription-modal'); });
             document.getElementById('add-investment-button').addEventListener('click', () => { document.getElementById('investment-form').reset(); document.getElementById('investment-id').value = ''; document.getElementById('investment-modal-title').textContent = "Novo Investimento"; openModal('investment-modal'); });
+            document.getElementById('add-goal-button').addEventListener('click', () => { document.getElementById('goal-form').reset(); document.getElementById('goal-id').value = ''; document.getElementById('goal-modal-title').textContent = "Novo Plano"; openModal('goal-modal'); });
             document.getElementById('subscription-form').addEventListener('submit', (e) => {
                 e.preventDefault();
                 const subId = document.getElementById('subscription-id').value;
